@@ -45,7 +45,8 @@ export async function getYieldData(
   let query = getClient()
     .from('yield_data')
     .select('date, treasury_10y, muni_yield, spread, spread_bps, muni_treasury_ratio')
-    .order('date', { ascending: true });
+    .order('date', { ascending: true })
+    .limit(3000); // 10Y of daily data is ~2600 rows; prevents Supabase's 1000-row default truncation
 
   if (startDate) query = query.gte('date', startDate);
   if (endDate)   query = query.lte('date', endDate);
