@@ -66,9 +66,20 @@ function StatCard({
 }
 
 export default function YieldSpreadChart() {
-  const [data, setData] = useState<YieldRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]         = useState<YieldRow[]>([]);
+  const [latest, setLatest]     = useState<YieldRow | null>(null);
+  const [loading, setLoading]   = useState(true);
   const [activeRange, setActiveRange] = useState('5Y');
+
+  // Stats always show the most recent row — fetched once, independently of the range.
+  useEffect(() => {
+    fetch(`/api/yields?start=${startDateForDays(10)}`)
+      .then(r => r.json())
+      .then(json => {
+        const rows: YieldRow[] = json.data ?? [];
+        if (rows.length > 0) setLatest(rows[rows.length - 1]);
+      });
+  }, []);
 
   const fetchData = useCallback(async (days: number) => {
     setLoading(true);
@@ -85,8 +96,6 @@ export default function YieldSpreadChart() {
     const range = RANGES.find(r => r.label === activeRange)!;
     fetchData(range.days);
   }, [activeRange, fetchData]);
-
-  const latest   = data[data.length - 1];
   const rangeDays = RANGES.find(r => r.label === activeRange)?.days ?? 1825;
   const fmt       = (v: string) => tickLabel(v, rangeDays);
 
