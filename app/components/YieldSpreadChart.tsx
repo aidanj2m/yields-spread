@@ -99,6 +99,19 @@ export default function YieldSpreadChart() {
   const rangeDays = RANGES.find(r => r.label === activeRange)?.days ?? 1825;
   const fmt       = (v: string) => tickLabel(v, rangeDays);
 
+  // For 10Y view, pin one tick per calendar year so no year is skipped
+  const yearlyTicks: string[] | undefined = rangeDays >= 3650 && data.length > 0
+    ? (() => {
+        const seen = new Set<number>();
+        const ticks: string[] = [];
+        for (const row of data) {
+          const yr = new Date(row.date).getFullYear();
+          if (!seen.has(yr)) { seen.add(yr); ticks.push(row.date); }
+        }
+        return ticks;
+      })()
+    : undefined;
+
   const gridColor  = 'var(--chart-grid, #e4e4e7)';
   const tickStyle  = { fontSize: 11, fill: '#71717a' };
 
@@ -124,8 +137,8 @@ export default function YieldSpreadChart() {
             <StatCard
               label="Spread"
               value={`${latest.spread_bps > 0 ? '+' : ''}${latest.spread_bps.toFixed(0)} bps`}
-              valueClass={latest.spread_bps > 0 ? 'text-red-500' : 'text-emerald-500'}
-              sub="muni − treasury"
+              valueClass={latest.spread_bps > 0 ? 'text-emerald-500' : 'text-red-500'}
+              sub="treasury − muni"
             />
             <StatCard
               label="Muni Ratio"
@@ -163,7 +176,7 @@ export default function YieldSpreadChart() {
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                  <XAxis dataKey="date" tickFormatter={fmt} tick={tickStyle} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={60} />
+                  <XAxis dataKey="date" tickFormatter={fmt} tick={tickStyle} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={60} ticks={yearlyTicks} />
                   <YAxis tick={tickStyle} tickLine={false} axisLine={false} tickFormatter={v => `${v}%`} width={42} domain={['auto', 'auto']} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
@@ -179,7 +192,7 @@ export default function YieldSpreadChart() {
                 Spread (bps)
               </p>
               <p className="mb-4 text-xs text-zinc-400">
-                Muni − Treasury · negative = munis yield less (normal) · positive = stress / cheapening event
+                Treasury − Muni · positive = munis yield less (normal) · negative = stress / cheapening event
               </p>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -190,7 +203,7 @@ export default function YieldSpreadChart() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                  <XAxis dataKey="date" tickFormatter={fmt} tick={tickStyle} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={60} />
+                  <XAxis dataKey="date" tickFormatter={fmt} tick={tickStyle} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={60} ticks={yearlyTicks} />
                   <YAxis tick={tickStyle} tickLine={false} axisLine={false} width={42} />
                   <ReferenceLine y={0} stroke="#71717a" strokeDasharray="4 4" />
                   <Tooltip content={<ChartTooltip />} />

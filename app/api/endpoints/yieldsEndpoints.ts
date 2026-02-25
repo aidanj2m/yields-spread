@@ -22,7 +22,7 @@ export async function seedHistoricalYields(): Promise<{ rowsWritten: number }> {
   const rows: YieldRow[] = dates.map(date => {
     const treasury = treasuryMap.get(date)!;
     const muni     = muniMap.get(date)!;
-    const spread   = parseFloat((muni - treasury).toFixed(4));
+    const spread   = parseFloat((treasury - muni).toFixed(4));
 
     return {
       date,
@@ -61,7 +61,7 @@ export async function updateRecentYields(): Promise<{ rowsWritten: number }> {
   const rows: YieldRow[] = dates.map(date => {
     const treasury = treasuryMap.get(date)!;
     const muni     = muniMap.get(date)!;
-    const spread   = parseFloat((muni - treasury).toFixed(4));
+    const spread   = parseFloat((treasury - muni).toFixed(4));
     return {
       date,
       treasury_10y:        treasury,
