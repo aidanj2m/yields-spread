@@ -42,17 +42,31 @@ export async function getYieldData(
   startDate?: string,
   endDate?: string
 ): Promise<YieldRow[]> {
-  let query = getClient()
-    .from('yield_data')
-    .select('date, treasury_10y, muni_yield, spread, spread_bps, muni_treasury_ratio')
-    .order('date', { ascending: true })
-    .limit(3000); // 10Y of daily data is ~2600 rows; prevents Supabase's 1000-row default truncation
+  // Supabase enforces a server-side max_rows of 1000 per request.
+  // Paginate with .range() to retrieve all rows regardless of that cap.
+  const PAGE_SIZE = 1000;
+  const allRows: YieldRow[] = [];
+  let from = 0;
 
-  if (startDate) query = query.gte('date', startDate);
-  if (endDate)   query = query.lte('date', endDate);
+  while (true) {
+    let query = getClient()
+      .from('yield_data')
+      .select('date, treasury_10y, muni_yield, spread, spread_bps, muni_treasury_ratio')
+      .order('date', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  const { data, error } = await query;
-  if (error) throw new Error(`Supabase query error: ${error.message}`);
+    if (startDate) query = query.gte('date', startDate);
+    if (endDate)   query = query.lte('date', endDate);
 
-  return (data ?? []) as YieldRow[];
+    const { data, error } = await query;
+    if (error) throw new Error(`Supabase query error: ${error.message}`);
+
+    const rows = (data ?? []) as YieldRow[];
+    allRows.push(...rows);
+
+    if (rows.length < PAGE_SIZE) break; // reached the last page
+    from += PAGE_SIZE;
+  }
+
+  return allRows;
 }
